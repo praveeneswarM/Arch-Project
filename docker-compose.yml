@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: archgen-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - archgen-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: archgen-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MODEL_NAME=gpt-4o-mini
+      - PORT=8000
+      - HOST=0.0.0.0
+      - MONGO_URI=mongodb://mongodb:27017
+      - DATABASE_NAME=archgen_db
+      - JWT_SECRET_KEY=archgen_super_secure_secret_hash_key_12345!
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    networks:
+      - archgen-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: archgen-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - archgen-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  archgen-network:
+    driver: bridge

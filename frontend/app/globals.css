@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #080b11;
+  color: #f3f4f6;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Futuristic Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080b11;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(79, 70, 229, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6);
+}
+
+/* Glassmorphism panel base utility */
+.glass-panel {
+  background: rgba(15, 22, 36, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Modern Glowing Gradients */
+.glow-card-indigo {
+  position: relative;
+}
+.glow-card-indigo::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.4), transparent 50%);
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glow-card-cyan {
+  position: relative;
+}
+.glow-card-cyan::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.4), transparent 50%);
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* React Flow customizations */
+.react-flow__background {
+  background-color: #080b11 !important;
+}
+
+.react-flow__minimap {
+  background-color: rgba(15, 22, 36, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls {
+  box-shadow: none !important;
+}
+
+.react-flow__controls-button {
+  background-color: rgba(15, 22, 36, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f3f4f6 !important;
+  fill: #f3f4f6 !important;
+  border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: rgba(79, 70, 229, 0.4) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.15) !important;
+  stroke-width: 2 !important;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke: #06b6d4 !important;
+  stroke-dasharray: 5;
+  animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 10;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
