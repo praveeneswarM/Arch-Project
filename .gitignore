@@ -6,6 +6,7 @@
 
 # Azure
 .azure/
+./Arch-test
 
 # Logs
 *.log
