@@ -22,70 +22,18 @@ Do not include any additional commentary or text before or after the JSON.
 """
 
 ARCHITECTURE_REASONING_PROMPT = """You are the ArchitectureReasoningAgent, a principal cloud architect.
-Your task is to review requirements and make ALL critical infrastructure decisions:
-- Infer workload patterns: If the app is OTT, streaming, or media-heavy, you MUST mandate Azure CDN, Azure Front Door, Redis Caching, Blob Storage, WAF, and DDoS Protection.
-- For Simple CRUD or basic web apps: Avoid Kubernetes/AKS and complex meshes. Rely on simple App Services/Container Apps.
-- Select the best database model (PostgreSQL relational, MongoDB document, Redis cache).
-- Define the monitoring stack (App Insights, Log Analytics).
-- Plan the visual coordinate positions for nodes:
-  - Gateways/Front Door around x: 100, y: 200
-  - Frontends around x: 300, y: 100
-  - Backends around x: 300, y: 250
-  - Cache and Databases around x: 500, y: 180 to 320
-  - Storages around x: 300, y: 400
-  - Security/Monitoring around x: 100, y: 400
-
-Return a STRICT JSON with nodes, edges, services list, and provider:
-{
-  "nodes": [
-    {
-      "id": "string (unique)",
-      "type": "FrontendNode | BackendNode | DatabaseNode | CacheNode | SecurityNode | GatewayNode | StorageNode | MonitoringNode",
-      "data": { "label": "string (readable title)", "status": "active" },
-      "position": { "x": number, "y": number }
-    }
-  ],
-  "edges": [
-    {
-      "id": "string (unique, e.g. e-node1-node2)",
-      "source": "string (node id)",
-      "target": "string (node id)",
-      "animated": true/false
-    }
-  ],
-  "services": [
-    { "name": "string", "category": "gateway|frontend|backend|database|cache|storage|security|monitoring", "description": "string" }
-  ],
-  "cloud_provider": "string"
-}
+Your task is to review the active architecture and describe its critical choices:
+Provide deep technical justifications for database model choice, compute hosting selection, caching strategy, and regional deployment details.
 
 Only return valid JSON. Do not include markdown codeblocks or extra text.
 """
 
 SECURITY_OPTIMIZATION_PROMPT = """You are the SecurityOptimizationAgent, an expert DevSecOps architect.
-Your job is to optimize the proposed architecture by injecting critical security resources:
-- Decide if a WAF (Web Application Firewall) node is needed (automatically add for banking, high security, or public APIs).
-- Inject an HSM / Vault Node (KeyVault) for private secret management.
-- Mandate private networking, subnets, and HTTPS traffic routing.
+Your job is to audit the proposed architecture and verify critical security resources.
+Analyze the target cloud provider and active services. Detail specific threat model recommendations, compliance frameworks, and network segmentation comments.
 
-Return a STRICT JSON that updates or appends nodes, edges, and logs security findings:
+Return a STRICT JSON with security findings, compliance checks, and a security score:
 {
-  "updated_nodes": [
-    {
-      "id": "string (unique)",
-      "type": "FrontendNode | BackendNode | DatabaseNode | CacheNode | SecurityNode | GatewayNode | StorageNode",
-      "data": { "label": "string", "status": "active" },
-      "position": { "x": number, "y": number }
-    }
-  ],
-  "updated_edges": [
-    {
-      "id": "string",
-      "source": "string",
-      "target": "string",
-      "animated": true/false
-    }
-  ],
   "security_findings": [
     { "severity": "Low | Medium | High", "description": "string", "remediation": "string" }
   ],
@@ -97,7 +45,7 @@ Return a STRICT JSON that updates or appends nodes, edges, and logs security fin
 """
 
 COMPLEXITY_AUDITOR_PROMPT = """You are the ComplexityAuditorAgent, a DevOps auditor specializing in detecting architectural anti-patterns and overengineering.
-Review the proposed services and architecture. Flag elements that introduces unnecessary complexity relative to the user's budget and scale.
+Review the proposed services and architecture. Flag elements that introduce unnecessary complexity relative to the user's budget and scale.
 
 Look out for:
 1. AKS (Kubernetes) or Service Mesh (Istio) proposed for simple apps with small budgets (e.g. budget under $500/mo or low user expectations).

@@ -16,10 +16,17 @@ output "backend_api_url_{{ safe_id }}" {
   description = "Fully Qualified Domain Name of the containerized core backend API service"
 }
 {% elif node.type == 'DatabaseNode' %}
+{% if 'Cosmos' in node.data.label or 'nosql' in node.id %}
+output "database_endpoint_{{ safe_id }}" {
+  value       = azurerm_cosmosdb_account.cosmos_db_{{ safe_id }}.endpoint
+  description = "The connection endpoint of the Cosmos DB NoSQL account"
+}
+{% else %}
 output "database_fqdn_{{ safe_id }}" {
   value       = azurerm_postgresql_flexible_server.postgres_db_{{ safe_id }}.fqdn
   description = "The fully qualified server name of the flexible PostgreSQL instances"
 }
+{% endif %}
 {% elif node.type == 'CacheNode' %}
 output "redis_hostname_{{ safe_id }}" {
   value       = azurerm_redis_cache.redis_cache_{{ safe_id }}.hostname

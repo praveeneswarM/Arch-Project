@@ -136,6 +136,25 @@ resource "azurerm_container_app" "api_backend_{{ safe_id }}" {
 }
 
 {% elif node.type == 'DatabaseNode' %}
+{% if 'Cosmos' in node.data.label or 'nosql' in node.id %}
+# Cosmos DB Account for NoSQL document storage
+resource "azurerm_cosmosdb_account" "cosmos_db_{{ safe_id }}" {
+  name                = "cosmos-${var.project_name}-db-${var.environment}-{{ safe_id }}"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  offer_type          = "Standard"
+  kind                = "GlobalDocumentDB"
+
+  consistency_policy {
+    consistency_level = "Session"
+  }
+
+  geo_location {
+    location          = azurerm_resource_group.rg.location
+    failover_priority = 0
+  }
+}
+{% else %}
 # Flexible PostgreSQL Server for relational transactional security
 resource "azurerm_postgresql_flexible_server" "postgres_db_{{ safe_id }}" {
   name                   = "psql-${var.project_name}-db-${var.environment}-{{ safe_id }}"
@@ -155,6 +174,7 @@ resource "azurerm_postgresql_flexible_server_database" "main_db_{{ safe_id }}" {
   collation = "en_US.utf8"
   charset   = "utf8"
 }
+{% endif %}
 
 {% elif node.type == 'CacheNode' %}
 # Redis Cache for quick session states and transient database caching
@@ -186,6 +206,14 @@ resource "azurerm_storage_container" "upload_bucket_{{ safe_id }}" {
 }
 
 {% elif node.type == 'SecurityNode' %}
+{% if 'ddos' in node.id %}
+# DDoS Protection Plan for volumetric attack mitigation
+resource "azurerm_network_ddos_protection_plan" "ddos_{{ safe_id }}" {
+  name                = "ddos-${var.project_name}-${var.environment}-{{ safe_id }}"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+{% else %}
 # Key Vault for system secret generation and certificate storage
 resource "azurerm_key_vault" "key_vault_{{ safe_id }}" {
   name                        = "kv-${var.project_name}-${var.environment}-{{ safe_id }}"
@@ -195,6 +223,7 @@ resource "azurerm_key_vault" "key_vault_{{ safe_id }}" {
   tenant_id                   = "00000000-0000-0000-0000-000000000000" # Placeholder UUID for configuration
   sku_name                    = "standard"
 }
+{% endif %}
 {% endif %}
 
 {% endfor %}

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from typing import Dict, Any, List
 from fastapi import APIRouter, HTTPException
 from models.schemas import RequirementInput, ArchitectureResponse, TerraformRequest, TerraformResponse, AiAssistRequest
@@ -15,6 +16,7 @@ from agents.architecture_explanation import ArchitectureExplanationAgent
 # Core engines
 from terraform.engine import TerraformEngine
 from utils.llm_provider import get_llm_provider
+from utils.reasoning_engine import InfrastructureReasoningEngine
 
 logger = logging.getLogger("api_routes")
 router = APIRouter()
@@ -26,37 +28,56 @@ tf_engine = TerraformEngine()
 @router.post("/generate-architecture", response_model=ArchitectureResponse)
 async def generate_architecture(requirements: RequirementInput):
     """
-    Orchestrates the upgraded Multi-Agent AI system:
-    Input -> Understood -> Inferred Reasoning -> Security Tiers -> Cost/Complexity Scan
+    Orchestrates the upgraded deterministic-first Architect pipeline:
+    Input -> Understood -> Deterministic Reasoning & Topology -> Security/Cost/Complexity & AI Enhancements
     """
-    logger.info("Initializing upgraded autonomous architect pipeline...")
+    logger.info("Initializing upgraded deterministic autonomous architect pipeline...")
     try:
+        # Step 1: Extract understanding via agent
         understanding_agent = RequirementUnderstandingAgent(client=llm_client)
         understood_reqs = await understanding_agent.analyze(requirements)
         
-        reasoning_agent = ArchitectureReasoningAgent(client=llm_client)
-        reasoned_plan = await reasoning_agent.reason(understood_reqs)
+        # Step 2: Deterministic infrastructure decision & rule-based service inference
+        provider = requirements.cloud_provider.lower()
+        reasoning_engine = InfrastructureReasoningEngine(cloud_provider=provider)
+        
+        workload = reasoning_engine.classify_workload(
+            requirements.app_description,
+            requirements.expected_users
+        )
+        
+        budget_val = 500.0
+        try:
+            budget_str = re.sub(r'[^\d.]', '', requirements.monthly_budget)
+            if budget_str:
+                budget_val = float(budget_str)
+        except Exception:
+            pass
+
+        logger.info(f"Classified workload: {workload} with parsed budget: {budget_val}")
+        
+        # Synthesize topology dynamically from rules (NO FALLBACK TEMPLATES!)
+        topology = reasoning_engine.plan_topology(workload, budget_val)
+        nodes = topology["nodes"]
+        edges = topology["edges"]
+        services = topology["services"]
+        
+        # Step 3: Run AI agents purely as audit and enhancement layers on the topology
+        eval_plan = {"nodes": nodes, "edges": edges, "services": services, "cloud_provider": provider}
         
         security_agent = SecurityOptimizationAgent(client=llm_client)
-        secured_plan = await security_agent.optimize_security(reasoned_plan, understood_reqs)
-        
-        nodes = secured_plan.get("updated_nodes", reasoned_plan.get("nodes", []))
-        edges = secured_plan.get("updated_edges", reasoned_plan.get("edges", []))
-        services = reasoned_plan.get("services", [])
-        provider = reasoned_plan.get("cloud_provider", requirements.cloud_provider)
-        
-        eval_plan = {"nodes": nodes, "edges": edges, "services": services}
-        
         complexity_agent = ComplexityAuditorAgent(client=llm_client)
         cost_agent = CostOptimizationAgent(client=llm_client)
         explanation_agent = ArchitectureExplanationAgent(client=llm_client)
         
+        # Run AI enhancements in parallel
+        security_task = security_agent.optimize_security(eval_plan, understood_reqs)
         complexity_task = complexity_agent.audit(eval_plan, understood_reqs)
         cost_task = cost_agent.optimize(eval_plan, understood_reqs)
         explanation_task = explanation_agent.explain(eval_plan, understood_reqs)
         
-        complexity_res, cost_res, explanation_res = await asyncio.gather(
-            complexity_task, cost_task, explanation_task
+        secured_res, complexity_res, cost_res, explanation_res = await asyncio.gather(
+            security_task, complexity_task, cost_task, explanation_task
         )
         
         terraform_modules = list(set([n.get("type", "Module") for n in nodes]))
@@ -66,22 +87,22 @@ async def generate_architecture(requirements: RequirementInput):
             edges=edges,
             services=services,
             cloud_provider=provider,
-            cost_estimate=float(cost_res.get("estimated_monthly_cost", 120.0)),
+            cost_estimate=float(cost_res.get("estimated_monthly_cost", budget_val * 0.8)),
             cost_breakdown=cost_res.get("cost_breakdown", []),
             optimization_recommendations=cost_res.get("optimization_recommendations", []),
             complexity_score=int(complexity_res.get("complexity_score", 45)),
             operational_overhead_score=int(complexity_res.get("operational_overhead_score", 30)),
             overengineered=bool(complexity_res.get("overengineered", False)),
             warnings=complexity_res.get("warnings", []),
-            security_score=int(secured_plan.get("security_score", 85)),
-            security_findings=secured_plan.get("security_findings", []),
-            compliance_checks=secured_plan.get("compliance_checks", []),
+            security_score=int(secured_res.get("security_score", 85)),
+            security_findings=secured_res.get("security_findings", []),
+            compliance_checks=secured_res.get("compliance_checks", []),
             explanation=explanation_res.get("explanation", ""),
             alternatives_considered=explanation_res.get("alternatives_considered", ""),
             justification_for_choices=explanation_res.get("justification_for_choices", ""),
             terraform_modules=terraform_modules
         )
-        logger.info("Consolidated security-first autonomous topology.")
+        logger.info(f"Consolidated deterministic-first topology with AI enhancements.")
         return response
         
     except Exception as e:
