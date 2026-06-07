@@ -17,7 +17,13 @@ class DatabaseManager:
         """
         logger.info(f"Connecting to MongoDB at: {MONGO_URI}")
         try:
-            self.client = AsyncIOMotorClient(MONGO_URI)
+            self.client = AsyncIOMotorClient(
+                MONGO_URI,
+                maxPoolSize=50,
+                minPoolSize=10,
+                serverSelectionTimeoutMS=5000,
+                socketTimeoutMS=30000
+            )
             self.db = self.client[DATABASE_NAME]
             # Simple ping to verify connection
             await self.client.admin.command('ping')

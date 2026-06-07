@@ -29,6 +29,7 @@ export default function LoginPage() {
     try {
       const data = await loginUser(username, password);
       localStorage.setItem("archgen_auth_token", data.access_token);
+      localStorage.setItem("archgen_refresh_token", data.refresh_token);
       localStorage.setItem("archgen_username", data.user.username);
       router.push("/dashboard");
     } catch (err: any) {

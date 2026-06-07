@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Set
 
 class InfrastructureReasoningEngine:
     """
@@ -29,198 +29,105 @@ class InfrastructureReasoningEngine:
         desc = app_description.lower()
         users = expected_users.lower()
 
-        # Check banking / fintech
         if any(w in desc for w in ["bank", "fintech", "payment", "transaction", "ledger", "pci", "banking", "finance"]):
             return "banking"
-        
-        # Check OTT / Streaming
         if any(w in desc for w in ["ott", "streaming", "video", "broadcast", "live", "media", "netflix", "youtube", "audio"]):
             return "ott"
-        
-        # Check AI Platform
         if any(w in desc for w in ["ai", "ml", "gpu", "llm", "deep learning", "inference", "training", "model", "openai", "gpt"]):
             return "ai_platform"
-        
-        # Check E-commerce
         if any(w in desc for w in ["ecommerce", "e-commerce", "shop", "retail", "cart", "store", "product catalog", "checkout"]):
             return "ecommerce"
-        
-        # Check SaaS Platform
         if any(w in desc for w in ["saas", "multi-tenant", "b2b saas", "subscription portal", "tenant"]):
             return "saas_platform"
-        
-        # Check Gaming Backend
         if any(w in desc for w in ["game", "gaming", "multiplayer", "matchmaking", "lobby", "leaderboard", "unreal", "unity"]):
             return "gaming_backend"
-        
-        # Check Analytics / Big Data
         if any(w in desc for w in ["analytics", "big data", "data warehouse", "lakehouse", "spark", "hadoop", "bi tool", "dashboard", "telemetry"]):
             return "analytics"
-        
-        # Check Microservices
         if any(w in desc for w in ["microservices", "kubernetes", "aks", "eks", "gke", "service mesh", "istio", "event-driven"]):
             return "microservices"
-        
-        # Check if explicitly tiny / simple -> CRUD
         if any(w in desc for w in ["simple", "crud", "basic", "portfolio", "hobby", "internal tool", "small database"]):
             return "crud"
         
-        # Default fallback classification based on scale or generic text
         if "million" in users or "100k" in users or "100,000" in users:
             return "saas_platform"
         
         return "crud"
 
+    def _load_matrix(self) -> Dict[str, Dict[str, str]]:
+        import os
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'provider_matrix.yaml')
+        matrix = {}
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                current_provider = None
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    if line.endswith(':'):
+                        current_provider = line[:-1].lower()
+                        matrix[current_provider] = {}
+                    elif ':' in line and current_provider:
+                        key, val = line.split(':', 1)
+                        matrix[current_provider][key.strip()] = val.strip(' "\'')
+            return matrix
+        except Exception:
+            return {}
+
     def get_cloud_resource_name(self, generic_type: str) -> str:
         """
-        Maps generic architectural components to provider-specific names.
+        Maps generic architectural components to provider-specific names from provider_matrix.yaml.
         """
-        mapping = {
-            "azure": {
-                "gateway": "Azure Front Door & WAF Ingress",
-                "cdn": "Azure CDN (Edge Content Delivery)",
-                "frontend": "Azure Static Web App (SPA)",
-                "compute_basic": "Azure App Service",
-                "compute_container": "Azure Container App",
-                "compute_k8s": "Azure Kubernetes Service (AKS)",
-                "database_relational": "Azure Database for PostgreSQL (Flexible)",
-                "database_nosql": "Azure Cosmos DB (NoSQL)",
-                "cache": "Azure Cache for Redis (HA)",
-                "storage": "Azure Storage Account (Hot Blobs)",
-                "vault": "Azure Key Vault (HSM Secrets)",
-                "monitoring": "Azure Log Analytics & App Insights",
-                "ddos": "Azure DDoS Protection Plan",
-                "vnet": "Azure Virtual Network (Private Subnets)"
-            },
-            "aws": {
-                "gateway": "AWS Application Load Balancer & WAF",
-                "cdn": "Amazon CloudFront CDN",
-                "frontend": "AWS Amplify Static Hosting / S3",
-                "compute_basic": "AWS Elastic Beanstalk",
-                "compute_container": "AWS ECS Fargate Container",
-                "compute_k8s": "Amazon EKS Cluster",
-                "database_relational": "Amazon RDS PostgreSQL (Multi-AZ)",
-                "database_nosql": "Amazon DynamoDB",
-                "cache": "Amazon ElastiCache Redis",
-                "storage": "Amazon S3 Bucket",
-                "vault": "AWS Secrets Manager / KMS",
-                "monitoring": "Amazon CloudWatch & X-Ray",
-                "ddos": "AWS Shield Advanced",
-                "vnet": "AWS VPC (Private & Public Subnets)"
-            },
-            "gcp": {
-                "gateway": "Google Cloud Load Balancing & Cloud Armor WAF",
-                "cdn": "Google Cloud CDN",
-                "frontend": "Firebase Hosting",
-                "compute_basic": "Google Cloud Run",
-                "compute_container": "Google Cloud Run Container",
-                "compute_k8s": "Google Kubernetes Engine (GKE)",
-                "database_relational": "Google Cloud SQL PostgreSQL",
-                "database_nosql": "Google Cloud Firestore",
-                "cache": "Google Cloud Memorystore Redis",
-                "storage": "Google Cloud Storage Bucket",
-                "vault": "Google Secret Manager",
-                "monitoring": "Google Cloud Operations Suite (Stackdriver)",
-                "ddos": "Google Cloud Armor Enterprise",
-                "vnet": "Google VPC Network"
-            }
-        }
+        if not hasattr(self, '_matrix'):
+            self._matrix = self._load_matrix()
         
-        provider_map = mapping.get(self.cloud_provider, mapping["azure"])
+        provider_map = self._matrix.get(self.cloud_provider, self._matrix.get("azure", {}))
         return provider_map.get(generic_type, generic_type)
 
-    def plan_topology(self, workload: str, budget: float) -> Dict[str, Any]:
+    def synthesize_from_intent(self, ai_intent: Dict[str, Any], budget: float) -> Dict[str, Any]:
         """
-        Deterministic architecture layout synthesis.
-        Translates workload class and budget directly into nodes, edges, and service listings.
+        Synthesizes the precise graph topology and resources directly from the LLM's abstract architectural intent.
         """
         nodes = []
         edges = []
         services = []
 
-        # Step 1: Infer resource rules
-        requires_cdn = False
-        requires_cache = False
-        requires_storage = False
-        requires_security = False
-        requires_monitoring = False
-        requires_vnet = False
-        requires_ddos = False
+        intent = ai_intent.get("architectural_intent", {})
+
+        requires_cdn = intent.get("requires_cdn", False)
+        requires_cache = intent.get("requires_caching", False)
+        requires_storage = intent.get("requires_blob_storage", False)
+        requires_security = intent.get("requires_hardware_security", False)
+        requires_vnet = intent.get("requires_private_networking", False)
+        requires_ddos = intent.get("requires_ddos_protection", False)
+        requires_waf = intent.get("requires_waf", False)
+        requires_queue = intent.get("requires_queue", False)
+        requires_monitoring = True # Base standard
         
-        db_type = "database_relational" # default
-        compute_type = "compute_container" # default
+        compute_pref = intent.get("compute_preference", "container")
+        db_pref = intent.get("database_preference", "relational")
 
-        # Apply specific rules
-        if workload == "ott":
-            requires_cdn = True
-            requires_storage = True
-            requires_cache = True
-            requires_monitoring = True
-            compute_type = "compute_container"
-            db_type = "database_nosql"
-        elif workload == "banking":
-            requires_security = True
-            requires_monitoring = True
-            requires_vnet = True
-            requires_ddos = True
-            compute_type = "compute_container"
-            db_type = "database_relational"
-        elif workload == "crud":
-            requires_cdn = False
-            requires_cache = False
-            requires_storage = False
-            requires_security = False
-            requires_monitoring = False
-            requires_vnet = False
-            # Small CRUD avoids Kubernetes and Redis unless high budget
+        # Map LLM preferences to internal types
+        if compute_pref == "kubernetes":
+            compute_type = "compute_k8s"
+        elif compute_pref == "basic_vm":
             compute_type = "compute_basic"
-            db_type = "database_relational"
-        elif workload == "ecommerce":
-            requires_cdn = True
-            requires_cache = True
-            requires_storage = True
-            requires_security = True
-            requires_monitoring = True
+        else:
             compute_type = "compute_container"
-            db_type = "database_relational"
-        elif workload == "ai_platform":
-            requires_storage = True
-            requires_cache = True
-            requires_security = True
-            requires_monitoring = True
-            compute_type = "compute_container"
+            
+        if db_pref == "nosql":
             db_type = "database_nosql"
-        elif workload == "saas_platform" or workload == "microservices":
-            requires_cdn = True
-            requires_cache = True
-            requires_storage = True
-            requires_security = True
-            requires_monitoring = True
-            requires_vnet = True
-            if budget >= 1000:
-                compute_type = "compute_k8s"
-            else:
-                compute_type = "compute_container"
-            db_type = "database_relational"
-        else: # defaults
-            requires_storage = True
-            requires_cache = True
-            compute_type = "compute_container"
+        else:
             db_type = "database_relational"
 
-        # Step 2: Define active service list
-        # We always want a Gateway / WAF layer if security/ddos or complex workloads
+        # Define active service list mapping to specific cloud provider
         gateway_title = self.get_cloud_resource_name("gateway")
         frontend_title = self.get_cloud_resource_name("frontend")
-        compute_title = self.get_cloud_resource_name("compute_k8s" if compute_type == "compute_k8s" else ("compute_container" if compute_type == "compute_container" else "compute_basic"))
+        compute_title = self.get_cloud_resource_name(compute_type)
         db_title = self.get_cloud_resource_name(db_type)
 
         # Dynamic Coordinates Builder (Deterministic Positions)
-        # Avoid static overlays. Clean layered design:
-        # X range: 80 - 600
-        # Y range: 100 - 450
         
-        # Node generation
         # 1. Gateway / Ingress
         nodes.append({
             "id": "gateway-node",
@@ -234,7 +141,7 @@ class InfrastructureReasoningEngine:
             "description": f"Public entry point, SSL termination, and threat prevention filtering traffic into the infrastructure."
         })
 
-        # 2. DDoS protection (If Banking/High scale)
+        # 2. DDoS protection
         if requires_ddos:
             nodes.append({
                 "id": "ddos-node",
@@ -249,7 +156,7 @@ class InfrastructureReasoningEngine:
             })
             edges.append({"id": "e-ddos-gateway", "source": "ddos-node", "target": "gateway-node", "animated": True})
 
-        # 3. CDN (If OTT/Ecomm/High media scale)
+        # 3. CDN
         if requires_cdn:
             nodes.append({
                 "id": "cdn-node",
@@ -277,6 +184,42 @@ class InfrastructureReasoningEngine:
             "description": "Hosts optimized single page application web builds (React, Next.js, HTML5/JS)."
         })
         edges.append({"id": "e-gateway-frontend", "source": "gateway-node", "target": "frontend-node", "animated": True})
+
+        # OTT Specific Enhancements
+        workload_class = ai_intent.get("workload_classification", "")
+        if workload_class == "ott":
+            requires_waf = True
+            
+            # WAF Enhancement on Gateway
+            nodes[0]["data"]["label"] = nodes[0]["data"]["label"].replace("Gateway", "WAF & API Gateway")
+            
+            # Upload Pipeline (Queue + Storage + Processing)
+            nodes.append({
+                "id": "upload-api",
+                "type": "BackendNode",
+                "data": {"label": "Upload Processing API", "status": "active", "typeSubText": "Ingest Layer"},
+                "position": {"x": 100, "y": 200}
+            })
+            services.append({"name": "Upload Processing API", "category": "backend", "description": "Handles massive concurrent video chunk uploads."})
+            edges.append({"id": "e-gateway-upload", "source": "gateway-node", "target": "upload-api", "animated": True})
+            
+            nodes.append({
+                "id": "transcoding-node",
+                "type": "BackendNode",
+                "data": {"label": self.get_cloud_resource_name("transcoding"), "status": "active", "typeSubText": "Video Transcoding"},
+                "position": {"x": 100, "y": 300}
+            })
+            services.append({"name": "Video Transcoding", "category": "backend", "description": "Converts raw uploads into adaptive bitrate streaming formats (HLS/DASH)."})
+            edges.append({"id": "e-upload-transcode", "source": "upload-api", "target": "transcoding-node", "animated": True})
+            
+            nodes.append({
+                "id": "media-processing",
+                "type": "BackendNode",
+                "data": {"label": self.get_cloud_resource_name("media_processing"), "status": "active", "typeSubText": "DRM & Packaging"},
+                "position": {"x": 100, "y": 400}
+            })
+            services.append({"name": "Media Processing", "category": "backend", "description": "Applies DRM and packages video chunks for CDN distribution."})
+            edges.append({"id": "e-transcode-media", "source": "transcoding-node", "target": "media-processing", "animated": True})
 
         # 5. Compute API Backend
         nodes.append({
@@ -322,7 +265,7 @@ class InfrastructureReasoningEngine:
             })
             edges.append({"id": "e-backend-cache", "source": "backend-node", "target": "cache-node", "animated": False})
 
-        # 8. File Storage (Hot blobs/S3)
+        # 8. File Storage
         if requires_storage:
             nodes.append({
                 "id": "storage-node",
@@ -339,7 +282,22 @@ class InfrastructureReasoningEngine:
             if requires_cdn:
                 edges.append({"id": "e-cdn-storage", "source": "cdn-node", "target": "storage-node", "animated": True})
 
-        # 9. Key Vault / HSM Secrets (If Banking or High Scale)
+        # Queue
+        if requires_queue:
+            nodes.append({
+                "id": "queue-node",
+                "type": "BackendNode",
+                "data": {"label": self.get_cloud_resource_name("queue"), "status": "active", "typeSubText": "Message Bus"},
+                "position": {"x": 100, "y": 300}
+            })
+            services.append({
+                "name": self.get_cloud_resource_name("queue"),
+                "category": "backend",
+                "description": "Asynchronous event-driven messaging queue."
+            })
+            edges.append({"id": "e-backend-queue", "source": "backend-node", "target": "queue-node", "animated": True})
+
+        # 9. Key Vault / HSM
         if requires_security:
             nodes.append({
                 "id": "vault-node",
@@ -373,4 +331,96 @@ class InfrastructureReasoningEngine:
             "nodes": nodes,
             "edges": edges,
             "services": services
+        }
+
+    def normalize_topology(self, topology: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sanitizes topology payloads coming back from synthesis.
+        """
+        nodes = topology.get("nodes") or []
+        edges = topology.get("edges") or []
+        services = topology.get("services") or []
+
+        if not isinstance(nodes, list) or not isinstance(edges, list) or not isinstance(services, list):
+            return {"nodes": [], "edges": [], "services": []}
+
+        allowed_types = {
+            "GatewayNode",
+            "FrontendNode",
+            "BackendNode",
+            "DatabaseNode",
+            "CacheNode",
+            "StorageNode",
+            "SecurityNode",
+            "MonitoringNode",
+        }
+
+        normalized_nodes = []
+        seen_nodes: Set[str] = set()
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            node_id = str(node.get("id", "")).strip()
+            node_type = str(node.get("type", "")).strip()
+            if not node_id or node_id in seen_nodes or node_type not in allowed_types:
+                continue
+            data = node.get("data") if isinstance(node.get("data"), dict) else {}
+            position = node.get("position") if isinstance(node.get("position"), dict) else {}
+            normalized_nodes.append({
+                "id": node_id,
+                "type": node_type,
+                "data": {
+                    "label": str(data.get("label", node_id)),
+                    "status": str(data.get("status", "active")),
+                    "cost": data.get("cost"),
+                    "typeSubText": data.get("typeSubText"),
+                },
+                "position": {
+                    "x": float(position.get("x", 0)),
+                    "y": float(position.get("y", 0)),
+                }
+            })
+            seen_nodes.add(node_id)
+
+        node_ids = {node["id"] for node in normalized_nodes}
+        normalized_edges = []
+        seen_edges: Set[str] = set()
+        for edge in edges:
+            if not isinstance(edge, dict):
+                continue
+            edge_id = str(edge.get("id", "")).strip()
+            source = str(edge.get("source", "")).strip()
+            target = str(edge.get("target", "")).strip()
+            if not edge_id or edge_id in seen_edges or source not in node_ids or target not in node_ids:
+                continue
+            normalized_edges.append({
+                "id": edge_id,
+                "source": source,
+                "target": target,
+                "animated": bool(edge.get("animated", False))
+            })
+            seen_edges.add(edge_id)
+
+        normalized_services = []
+        seen_services: Set[str] = set()
+        for service in services:
+            if not isinstance(service, dict):
+                continue
+            service_name = str(service.get("name", "")).strip()
+            if not service_name or service_name in seen_services:
+                continue
+            normalized_services.append({
+                "name": service_name,
+                "category": str(service.get("category", "backend")),
+                "description": str(service.get("description", service_name)),
+            })
+            seen_services.add(service_name)
+
+        if not normalized_nodes:
+            return {"nodes": [], "edges": [], "services": []}
+
+        return {
+            "nodes": normalized_nodes,
+            "edges": normalized_edges,
+            "services": normalized_services,
         }

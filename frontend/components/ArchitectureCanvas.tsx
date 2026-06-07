@@ -72,10 +72,10 @@ const TIER_CONFIG: Record<string, { tier: number; priority: number }> = {
   MonitoringNode: { tier: 3, priority: 3 },
 };
 
-const TIER_Y_POSITIONS = [60, 210, 360, 510];
-const NODE_WIDTH = 230;
-const NODE_H_GAP = 30;
-const CANVAS_CENTER_X = 380;
+const TIER_Y_POSITIONS = [80, 260, 440, 620];
+const NODE_WIDTH = 280;
+const NODE_H_GAP = 60;
+const CANVAS_CENTER_X = 500;
 
 /**
  * Computes a professional top-to-bottom tiered layout.
@@ -91,6 +91,9 @@ function computeTieredLayout(nodes: Node[]): Node[] {
   });
 
   const result: Node[] = [];
+  let minX = CANVAS_CENTER_X;
+  let maxX = CANVAS_CENTER_X;
+  let maxY = TIER_Y_POSITIONS[0];
 
   Object.entries(tiers).forEach(([tierStr, tierNodes]) => {
     const tierIndex = parseInt(tierStr);
@@ -104,6 +107,10 @@ function computeTieredLayout(nodes: Node[]): Node[] {
     const count = sorted.length;
     const totalWidth = count * NODE_WIDTH + (count - 1) * NODE_H_GAP;
     const startX = CANVAS_CENTER_X - totalWidth / 2;
+    
+    if (startX < minX) minX = startX;
+    if (startX + totalWidth > maxX) maxX = startX + totalWidth;
+    if ((TIER_Y_POSITIONS[tierIndex] ?? 0) > maxY) maxY = TIER_Y_POSITIONS[tierIndex] ?? 0;
 
     sorted.forEach((node, i) => {
       result.push({
@@ -115,6 +122,29 @@ function computeTieredLayout(nodes: Node[]): Node[] {
       });
     });
   });
+
+  // Inject VPC/VNet Container for all nodes EXCEPT gateways (tier 0)
+  if (result.some(n => n.type !== "GatewayNode" && n.type !== "NetworkGroupNode")) {
+    const startY = (TIER_Y_POSITIONS[1] ?? 260) - 100;
+    const endY = maxY + 150;
+    
+    // Remove any existing vpc group to avoid duplicates
+    const filtered = result.filter(n => n.id !== "vpc-group");
+    filtered.unshift({
+      id: "vpc-group",
+      type: "NetworkGroupNode",
+      position: { x: minX - 80, y: startY },
+      data: {
+        label: "Secure Virtual Network (VPC/VNet)",
+        width: (maxX - minX) + 160,
+        height: endY - startY
+      },
+      zIndex: -1,
+      draggable: false,
+      selectable: false,
+    });
+    return filtered;
+  }
 
   return result;
 }

@@ -4,7 +4,7 @@ output "resource_group_name" {
 }
 
 {% for node in nodes %}
-{% set safe_id = node.id | replace("-", "_") %}
+{% set safe_id = node.id | sanitize_id %}
 {% if node.type == 'FrontendNode' %}
 output "frontend_endpoint_{{ safe_id }}" {
   value       = azurerm_static_web_app.spa_frontend_{{ safe_id }}.default_host_name

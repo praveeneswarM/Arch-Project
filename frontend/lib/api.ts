@@ -49,6 +49,36 @@ export async function loginUser(
   return response.json();
 }
 
+export async function refreshAccessToken(refreshToken: string): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(errText || "Session refresh failed");
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+export async function getCurrentUser(token: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(errText || "Failed to load current user");
+  }
+
+  return response.json();
+}
+
 // ─── Core Multi-Agent Pipeline ─────────────────────────────────────────────
 
 export async function generateArchitecture(

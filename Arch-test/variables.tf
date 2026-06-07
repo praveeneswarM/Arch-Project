@@ -20,5 +20,4 @@ variable "db_password" {
   type        = string
   description = "Administrator login password for flexible databases"
   sensitive   = true
-  default     = "P@ssw0rd12345!"
 }

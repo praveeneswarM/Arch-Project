@@ -22,10 +22,33 @@ Do not include any additional commentary or text before or after the JSON.
 """
 
 ARCHITECTURE_REASONING_PROMPT = """You are the ArchitectureReasoningAgent, a principal cloud architect.
-Your task is to review the active architecture and describe its critical choices:
-Provide deep technical justifications for database model choice, compute hosting selection, caching strategy, and regional deployment details.
+Your task is to review requirements and output a purely abstract "architectural intent". You will NOT generate UI nodes or Terraform configurations directly. You will classify the workload and prescribe the infrastructural requirements based on enterprise best practices.
 
-Only return valid JSON. Do not include markdown codeblocks or extra text.
+Return strict JSON with this exact structure:
+{
+  "workload_classification": "ott | banking | ecommerce | ai_platform | gaming_backend | crud | analytics | microservices",
+  "architectural_intent": {
+    "requires_cdn": true/false,
+    "requires_waf": true/false,
+    "requires_ddos_protection": true/false,
+    "requires_ha_database": true/false,
+    "requires_caching": true/false,
+    "requires_blob_storage": true/false,
+    "requires_queue": true/false,
+    "requires_hardware_security": true/false,
+    "requires_private_networking": true/false,
+    "compute_preference": "kubernetes | container | basic_vm | serverless",
+    "database_preference": "relational | nosql"
+  },
+  "reasoning_summary": "string (Why you made these choices based on budget, scale, and workload)"
+}
+
+Requirements:
+- OTT: Must include CDN, Blob Storage, Redis, WAF, autoscaling.
+- Banking: Must include WAF, DDoS protection, Private Networking, Hardware Security (KeyVault), HA DB.
+- AI SaaS: Must include Blob Storage, Queue, AI Processing, Vector/NoSQL DB.
+- Simple CRUD/Blog: Must avoid K8s and Redis unless scale/budget strictly demands it. Prefer simple App Service and PostgreSQL.
+- Do not use markdown or extra commentary.
 """
 
 SECURITY_OPTIMIZATION_PROMPT = """You are the SecurityOptimizationAgent, an expert DevSecOps architect.

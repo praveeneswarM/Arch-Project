@@ -24,42 +24,44 @@ class OpenAIClient:
                 self.client = AsyncOpenAI(api_key=self.api_key)
                 logger.info(f"OpenAI AsyncClient initialized with model: {self.model}")
             except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}. Falling back to Mock mode.")
+                logger.error(f"Failed to initialize OpenAI client: {e}. OpenAI provider will be skipped.")
                 self.client = None
         else:
-            logger.warning("OPENAI_API_KEY not set or invalid. Running in HIGH-FIDELITY mock fallback mode.")
+            logger.warning("OPENAI_API_KEY not set or invalid. OpenAI provider is unavailable.")
 
     async def generate_json(self, system_prompt: str, user_prompt: str, schema: Optional[Any] = None) -> Dict[str, Any]:
         """
-        Generates a JSON response from OpenAI. Fallbacks to mock responses if key is missing or calls fail.
+        Generates a JSON response from OpenAI.
         """
-        if self.client:
-            try:
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-                
-                response_format = {"type": "json_object"}
-                
-                logger.info(f"Sending request to OpenAI using {self.model}...")
-                response = await self.client.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    response_format=response_format,
-                    temperature=0.2,
-                    max_tokens=4000
-                )
-                
-                content = response.choices[0].message.content
-                logger.info("Successfully received response from OpenAI.")
-                return json.loads(content)
-            except Exception as e:
-                logger.error(f"OpenAI API call failed: {e}. Activating mock fallback generator.")
-        
-        return self._generate_mock_response(system_prompt, user_prompt)
+        if not self.client:
+            raise RuntimeError("OpenAI unavailable: API key missing or invalid")
 
-    def _generate_mock_response(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
+        try:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+
+            response_format = {"type": "json_object"}
+
+            logger.info(f"Sending request to OpenAI using {self.model}...")
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                response_format=response_format,
+                temperature=0.2,
+                max_tokens=4000
+            )
+
+            content = response.choices[0].message.content
+            logger.info("Successfully received response from OpenAI.")
+            return json.loads(content)
+        except Exception as e:
+            logger.error(f"OpenAI API call failed: {e}")
+            raise RuntimeError(f"OpenAI request failed: {e}") from e
+
+    @staticmethod
+    def _generate_mock_response(system_prompt: str, user_prompt: str) -> Dict[str, Any]:
         """
         Generates realistic architecture, cost, security, complexity, and HCL parameters
         by scanning description keywords inside user prompts.

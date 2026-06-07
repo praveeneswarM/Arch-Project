@@ -14,7 +14,9 @@ class BaseAgent:
         """
         Executes the agent's specific reasoning cycle.
         """
-        logger.info(f"Running agent: {self.name}")
+        provider_name = getattr(self.client, "provider_name", self.client.__class__.__name__)
+        model_name = getattr(self.client, "model_name", "unknown")
+        logger.info(f"Running agent: {self.name} | Active Provider: {provider_name} | Model Name: {model_name}")
         try:
             result = await self.client.generate_json(
                 system_prompt=self.system_prompt,

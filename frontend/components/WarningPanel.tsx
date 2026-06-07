@@ -16,73 +16,60 @@ export default function WarningPanel({
   operationalOverheadScore,
   overengineered,
 }: WarningPanelProps) {
-  // Determine color matching for complexity ratings
-  const getComplexityColor = (score: number) => {
-    if (score < 40) return "text-emerald-400 border-emerald-500/20 bg-emerald-500/5";
-    if (score < 75) return "text-amber-400 border-amber-500/20 bg-amber-500/5";
-    return "text-rose-400 border-rose-500/20 bg-rose-500/5";
-  };
-
   return (
-    <div className="flex flex-col gap-4 border border-white/5 rounded-2xl glass-panel p-5 h-full">
-      {/* Group Header */}
-      <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-        <Gauge className="w-4 h-4 text-indigo-400" />
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-200 font-sans">
+    <div className="flex flex-col gap-4 border border-zinc-200 rounded-3xl bg-white p-5 h-full">
+      <div className="flex items-center gap-2 pb-2 border-b border-zinc-200">
+        <Gauge className="w-4 h-4 text-zinc-950" />
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-950 font-sans">
           Complexity & Auditor Analysis
         </h2>
       </div>
 
-      {/* Scores Grid */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Complexity Gauge Card */}
-        <div className={`border rounded-xl p-3 flex flex-col items-center justify-center text-center ${getComplexityColor(complexityScore)}`}>
-          <span className="text-[10px] uppercase font-mono tracking-widest text-gray-400 mb-1">Complexity Rating</span>
-          <span className="text-2xl font-black font-mono leading-none">{complexityScore}</span>
-          <span className="text-[9px] font-mono mt-1 text-gray-500">Scale of 100</span>
+        <div className="border border-zinc-200 rounded-2xl p-3 flex flex-col items-center justify-center text-center bg-zinc-50">
+          <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-500 mb-1">Complexity Rating</span>
+          <span className="text-2xl font-semibold font-mono leading-none text-zinc-950">{complexityScore}</span>
+          <span className="text-[9px] font-mono mt-1 text-zinc-500">Scale of 100</span>
         </div>
 
-        {/* Operational Overhead Card */}
-        <div className={`border rounded-xl p-3 flex flex-col items-center justify-center text-center ${getComplexityColor(operationalOverheadScore)}`}>
-          <span className="text-[10px] uppercase font-mono tracking-widest text-gray-400 mb-1">Ops Overhead</span>
-          <span className="text-2xl font-black font-mono leading-none">{operationalOverheadScore}</span>
-          <span className="text-[9px] font-mono mt-1 text-gray-500">Scale of 100</span>
+        <div className="border border-zinc-200 rounded-2xl p-3 flex flex-col items-center justify-center text-center bg-zinc-50">
+          <span className="text-[10px] uppercase font-mono tracking-widest text-zinc-500 mb-1">Ops Overhead</span>
+          <span className="text-2xl font-semibold font-mono leading-none text-zinc-950">{operationalOverheadScore}</span>
+          <span className="text-[9px] font-mono mt-1 text-zinc-500">Scale of 100</span>
         </div>
       </div>
 
-      {/* Overengineering Warning Banner */}
       {overengineered ? (
-        <div className="flex items-start gap-3 bg-rose-950/20 border border-rose-500/20 p-3 rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.05)]">
-          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5 animate-pulse" />
+        <div className="flex items-start gap-3 bg-white border border-zinc-200 p-3 rounded-2xl">
+          <AlertTriangle className="w-5 h-5 text-zinc-950 shrink-0 mt-0.5" />
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-rose-400 font-sans">Overengineering Flagged!</span>
-            <p className="text-[10px] text-gray-400 mt-0.5 leading-relaxed font-mono">
+            <span className="text-xs font-semibold text-zinc-950 font-sans">Overengineering Flagged!</span>
+            <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed font-mono">
               The ComplexityAuditorAgent detected infrastructural elements excessive for your traffic scale and budget constraints.
             </p>
           </div>
         </div>
       ) : (
-        <div className="flex items-start gap-3 bg-emerald-950/20 border border-emerald-500/20 p-3 rounded-xl">
-          <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-zinc-50 border border-zinc-200 p-3 rounded-2xl">
+          <ShieldCheck className="w-5 h-5 text-zinc-950 shrink-0 mt-0.5" />
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-emerald-400 font-sans">Optimally Engineered Stack</span>
-            <p className="text-[10px] text-gray-400 mt-0.5 leading-relaxed font-mono">
+            <span className="text-xs font-semibold text-zinc-950 font-sans">Optimally Engineered Stack</span>
+            <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed font-mono">
               The architecture is aligned with your scale targets, minimizing operational waste.
             </p>
           </div>
         </div>
       )}
 
-      {/* Warnings List */}
       <div className="flex flex-col gap-2 flex-1 overflow-y-auto max-h-44 pr-1">
-        <span className="text-[10px] uppercase tracking-wider text-gray-400 font-mono flex items-center gap-1">
-          <Layers className="w-3 h-3 text-indigo-400" /> System Warnings ({warnings.length})
+        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono flex items-center gap-1">
+          <Layers className="w-3 h-3 text-zinc-950" /> System Warnings ({warnings.length})
         </span>
         {warnings.length === 0 ? (
-          <p className="text-[10px] text-gray-500 font-mono italic">No auditor warnings triggered.</p>
+          <p className="text-[10px] text-zinc-500 font-mono italic">No auditor warnings triggered.</p>
         ) : (
           warnings.map((warn, i) => (
-            <div key={i} className="flex gap-2 text-[10px] font-mono text-amber-300 bg-amber-500/5 border border-amber-500/10 p-2.5 rounded-lg">
+            <div key={i} className="flex gap-2 text-[10px] font-mono text-zinc-700 bg-zinc-50 border border-zinc-200 p-2.5 rounded-2xl">
               <span className="shrink-0">•</span>
               <p className="leading-normal">{warn}</p>
             </div>

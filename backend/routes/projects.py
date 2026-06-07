@@ -34,13 +34,17 @@ async def save_project(input_data: ProjectSaveInput, current_user: dict = Depend
     
     if input_data.id:
         try:
-            await db["projects"].update_one(
-                {"_id": ObjectId(input_data.id), "username": current_user["username"]},
-                {"$set": project_doc}
-            )
-            return {"status": "success", "id": input_data.id, "message": "Project updated successfully."}
+            object_id = ObjectId(input_data.id)
         except Exception as e:
             raise HTTPException(status_code=400, detail="Invalid project identifier formatting.")
+
+        result = await db["projects"].update_one(
+            {"_id": object_id, "username": current_user["username"]},
+            {"$set": project_doc}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Project not found or unauthorized.")
+        return {"status": "success", "id": input_data.id, "message": "Project updated successfully."}
     else:
         result = await db["projects"].insert_one(project_doc)
         return {"status": "success", "id": str(result.inserted_id), "message": "Project saved successfully."}

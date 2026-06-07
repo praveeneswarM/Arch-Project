@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -38,6 +39,25 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "An internal server error occurred.", "error_message": str(exc)},
     )
 
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    start_time = time.perf_counter()
+    logging.info("Request started %s %s", request.method, request.url.path)
+    try:
+        response = await call_next(request)
+    except Exception:
+        logging.exception("Unhandled exception while processing %s %s", request.method, request.url.path)
+        raise
+    duration_ms = (time.perf_counter() - start_time) * 1000
+    logging.info(
+        "Request completed %s %s %s %.2fms",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
+    return response
+
 # Startup MongoDB connection hook
 @app.on_event("startup")
 async def startup_db_client():
@@ -54,7 +74,8 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "ArchGen AI SaaS Orchestrator",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "database": "connected" if db_manager.db is not None else "disconnected"
     }
 
 # Register SaaS sub-routers under prefix

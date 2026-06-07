@@ -55,6 +55,9 @@ class ArchitectureResponse(BaseModel):
     edges: List[EdgeSchema]
     services: List[ServiceSchema]
     cloud_provider: str
+    active_provider: Optional[str] = None
+    active_model: Optional[str] = None
+    fallback_trigger: Optional[str] = None
     cost_estimate: float
     cost_breakdown: List[CostBreakdownItem]
     optimization_recommendations: List[str]
@@ -69,6 +72,7 @@ class ArchitectureResponse(BaseModel):
     alternatives_considered: str
     justification_for_choices: str
     terraform_modules: List[str]
+    execution_time_ms: Optional[int] = None
 
 class TerraformRequest(BaseModel):
     nodes: List[NodeSchema]

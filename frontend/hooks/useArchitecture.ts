@@ -170,20 +170,21 @@ export function useArchitecture() {
   }, [enrichNodeData]);
 
   // Compiles HCL and gathers analysis once approved
-  const approveArchitecture = useCallback(async () => {
-    if (!architecture) return;
+  const approveArchitecture = useCallback(async (architectureOverride?: ArchitectureResponse | null) => {
+    const activeArchitecture = architectureOverride ?? architecture;
+    if (!activeArchitecture) return;
     setIsApproved(true);
     setTfLoading(true);
     try {
       const tfPromise = generateTerraform({
-        nodes: architecture.nodes,
-        edges: architecture.edges,
-        services: architecture.services,
-        cloud_provider: architecture.cloud_provider
+        nodes: activeArchitecture.nodes,
+        edges: activeArchitecture.edges,
+        services: activeArchitecture.services,
+        cloud_provider: activeArchitecture.cloud_provider
       });
-      const securityPromise = validateSecurity(architecture.nodes, architecture.services);
-      const costPromise = optimizeCost(architecture.nodes, architecture.services);
-      const explanationPromise = explainArchitecture(architecture.nodes, architecture.services);
+      const securityPromise = validateSecurity(activeArchitecture.nodes, activeArchitecture.services);
+      const costPromise = optimizeCost(activeArchitecture.nodes, activeArchitecture.services);
+      const explanationPromise = explainArchitecture(activeArchitecture.nodes, activeArchitecture.services);
 
       const [tfData, securityData, costData, explanationData] = await Promise.all([
         tfPromise, securityPromise, costPromise, explanationPromise
@@ -369,6 +370,7 @@ export function useArchitecture() {
     triggerGenerate,
     approveArchitecture,
     regenerateArchitecture,
+    loadArchitecture: setArchitecture,
     updateLocalTopology,
     undo,
     redo,

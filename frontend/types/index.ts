@@ -65,6 +65,9 @@ export interface ArchitectureResponse {
   edges: EdgeSchema[];
   services: ServiceSchema[];
   cloud_provider: string;
+  active_provider?: string;
+  active_model?: string;
+  fallback_trigger?: string;
   cost_estimate: number;
   cost_breakdown: CostBreakdownItem[];
   optimization_recommendations: string[];
@@ -79,6 +82,7 @@ export interface ArchitectureResponse {
   alternatives_considered: string;
   justification_for_choices: string;
   terraform_modules: string[];
+  execution_time_ms?: number;
 }
 
 export interface TerraformRequest {

@@ -218,6 +218,21 @@ export const MonitoringNode = memo(({ id, data }: any) => (
 ));
 MonitoringNode.displayName = "MonitoringNode";
 
+export const NetworkGroupNode = memo(({ data }: any) => {
+  return (
+    <div 
+      className="w-full h-full border-2 border-dashed border-sky-500/30 rounded-3xl bg-sky-950/5 pointer-events-none relative transition-colors duration-500"
+      style={{ width: data.width || 800, height: data.height || 600 }}
+    >
+      <div className="absolute -top-3 left-6 bg-[#18181b] px-3 py-1 text-xs font-mono text-sky-400 rounded-full border border-sky-500/30 flex items-center gap-2 shadow-lg">
+        <Globe className="w-3.5 h-3.5" />
+        {data.label || "Virtual Network / VPC"}
+      </div>
+    </div>
+  );
+});
+NetworkGroupNode.displayName = "NetworkGroupNode";
+
 export const nodeTypes = {
   GatewayNode,
   FrontendNode,
@@ -227,4 +242,5 @@ export const nodeTypes = {
   StorageNode,
   SecurityNode,
   MonitoringNode,
+  NetworkGroupNode,
 };

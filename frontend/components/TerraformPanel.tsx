@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { TerraformResponse } from "../types";
-import { Copy, Check, Terminal, FileCode, CheckCircle } from "lucide-react";
+import { Copy, Check, Terminal, FileCode } from "lucide-react";
 
 interface TerraformPanelProps {
   terraform: TerraformResponse | null;
@@ -45,111 +45,82 @@ export default function TerraformPanel({ terraform, isLoading }: TerraformPanelP
 
   if (isLoading && !terraform) {
     return (
-      <div className="flex flex-col items-center justify-center h-72 border border-white/5 rounded-2xl glass-panel p-6">
-        <div className="w-8 h-8 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
-        <p className="text-xs font-mono text-gray-400">Compiling Terraform configurations...</p>
+      <div className="flex h-72 flex-col items-center justify-center rounded-3xl border border-zinc-200 bg-white p-6">
+        <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-950"></div>
+        <p className="text-xs font-mono text-zinc-500">Compiling Terraform configurations...</p>
       </div>
     );
   }
 
   if (!terraform) {
     return (
-      <div className="flex flex-col items-center justify-center h-72 border border-white/5 rounded-2xl glass-panel p-6 text-center">
-        <FileCode className="w-8 h-8 text-indigo-400/40 mb-3" />
-        <p className="text-sm font-semibold text-gray-300 font-sans">No Infrastructure Generated</p>
-        <p className="text-xs text-gray-500 max-w-xs mt-1 font-mono">
-          Enter cloud specifications on the left to output deployable Terraform.
+      <div className="flex h-72 flex-col items-center justify-center rounded-3xl border border-zinc-200 bg-white p-6 text-center">
+        <FileCode className="mb-3 h-8 w-8 text-zinc-950/40" />
+        <p className="text-sm font-semibold text-zinc-950">No Infrastructure Generated</p>
+        <p className="mt-1 max-w-xs text-xs text-zinc-500 font-mono">
+          Enter cloud specifications to output deployable Terraform.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col border border-white/5 rounded-2xl glass-panel overflow-hidden h-full">
-      {/* File Selector Tabs */}
-      <div className="bg-background/80 border-b border-white/5 px-4 py-2 flex items-center justify-between gap-2 overflow-x-auto">
-        <div className="flex gap-1.5 min-w-max">
-          <button
-            onClick={() => setActiveTab("main")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-              activeTab === "main" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : "text-gray-400 hover:text-gray-200 border border-transparent"
-            }`}
-          >
-            main.tf
-          </button>
-          <button
-            onClick={() => setActiveTab("variables")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-              activeTab === "variables" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : "text-gray-400 hover:text-gray-200 border border-transparent"
-            }`}
-          >
-            variables.tf
-          </button>
-          <button
-            onClick={() => setActiveTab("outputs")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-              activeTab === "outputs" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : "text-gray-400 hover:text-gray-200 border border-transparent"
-            }`}
-          >
-            outputs.tf
-          </button>
-          <button
-            onClick={() => setActiveTab("tfvars")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-              activeTab === "tfvars" ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30" : "text-gray-400 hover:text-gray-200 border border-transparent"
-            }`}
-          >
-            terraform.tfvars
-          </button>
-          <button
-            onClick={() => setActiveTab("guide")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
-              activeTab === "guide" ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" : "text-gray-400 hover:text-gray-200 border border-transparent"
-            }`}
-          >
-            Operations Guide
-          </button>
+    <div className="flex h-full flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white">
+      <div className="flex items-center justify-between gap-2 overflow-x-auto border-b border-zinc-200 bg-zinc-50 px-4 py-2">
+        <div className="flex min-w-max gap-1.5">
+          {[
+            ["main", "main.tf"],
+            ["variables", "variables.tf"],
+            ["outputs", "outputs.tf"],
+            ["tfvars", "terraform.tfvars"],
+            ["guide", "Operations Guide"],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key as any)}
+              className={`rounded-full px-3 py-1.5 text-xs font-mono transition ${
+                activeTab === key ? "bg-zinc-950 text-white" : "text-zinc-500 hover:text-zinc-950"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Action button */}
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-gray-300 px-3 py-1.5 rounded-lg text-xs font-mono border border-white/5 transition-all active:scale-95"
+          className="flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-mono text-zinc-700 transition hover:border-zinc-950"
           title="Copy block to clipboard"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-              <span className="text-emerald-400">Copied!</span>
+              <Check className="h-3.5 w-3.5 text-zinc-950" />
+              <span>Copied!</span>
             </>
           ) : (
             <>
-              <Copy className="w-3.5 h-3.5 text-indigo-400" />
+              <Copy className="h-3.5 w-3.5 text-zinc-950" />
               <span>Copy</span>
             </>
           )}
         </button>
       </div>
 
-      {/* Code Display Area */}
-      <div className="flex-1 bg-background/50 p-4 overflow-y-auto h-96 relative">
+      <div className="relative h-96 flex-1 overflow-y-auto bg-white p-4">
         {isLoading && (
-          <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
-            <div className="flex items-center gap-2 bg-background border border-indigo-500/30 px-4 py-2 rounded-xl text-xs font-mono text-indigo-400 animate-pulse-slow">
-              <Terminal className="w-4 h-4 animate-spin" />
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
+            <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-mono text-zinc-700">
+              <Terminal className="h-4 w-4 animate-spin" />
               <span>Regenerating HCL Stack...</span>
             </div>
           </div>
         )}
-        <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap leading-relaxed">
-          {getCodeContent()}
-        </pre>
+        <pre className="whitespace-pre-wrap text-xs leading-relaxed text-zinc-700 font-mono">{getCodeContent()}</pre>
       </div>
 
-      {/* Terminal Info Footer */}
-      <div className="bg-background/90 px-4 py-2 border-t border-white/5 flex justify-between items-center text-[9px] font-mono text-gray-500">
+      <div className="flex items-center justify-between border-t border-zinc-200 bg-zinc-50 px-4 py-2 text-[9px] font-mono text-zinc-500">
         <span className="flex items-center gap-1">
-          <Terminal className="w-3 h-3 text-cyan-400" />
+          <Terminal className="h-3 w-3 text-zinc-950" />
           <span>Output format: HCL-compliant template files</span>
         </span>
         <span>Scope: Local Directory</span>

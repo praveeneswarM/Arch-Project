@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 from typing import Dict, Any, List
@@ -31,13 +32,23 @@ async def generate_architecture(requirements: RequirementInput):
     Orchestrates the upgraded deterministic-first Architect pipeline:
     Input -> Understood -> Deterministic Reasoning & Topology -> Security/Cost/Complexity & AI Enhancements
     """
-    logger.info("Initializing upgraded deterministic autonomous architect pipeline...")
+    """
+    Orchestrates the upgraded deterministic-first Architect pipeline:
+    Input -> Understood -> Deterministic Reasoning & Topology -> Security/Cost/Complexity & AI Enhancements
+    """
+    logger.info(
+        "Initializing upgraded deterministic autonomous architect pipeline | Active Provider: %s | Model Name: %s",
+        getattr(llm_client, "provider_name", llm_client.__class__.__name__),
+        getattr(llm_client, "model_name", "unknown"),
+    )
     try:
+        start_time = asyncio.get_event_loop().time()
+        
         # Step 1: Extract understanding via agent
         understanding_agent = RequirementUnderstandingAgent(client=llm_client)
         understood_reqs = await understanding_agent.analyze(requirements)
         
-        # Step 2: Deterministic infrastructure decision & rule-based service inference
+        # Step 2: Reason over the requirements using the active AI provider
         provider = requirements.cloud_provider.lower()
         reasoning_engine = InfrastructureReasoningEngine(cloud_provider=provider)
         
@@ -55,9 +66,30 @@ async def generate_architecture(requirements: RequirementInput):
             pass
 
         logger.info(f"Classified workload: {workload} with parsed budget: {budget_val}")
+
+        reasoning_agent = ArchitectureReasoningAgent(client=llm_client)
+        reasoning_input = {
+            "requirements": requirements.model_dump(),
+            "understood_requirements": understood_reqs,
+            "classified_workload": workload,
+            "budget": budget_val,
+            "cloud_provider": provider,
+        }
+        reasoned_intent = await reasoning_agent.reason(reasoning_input)
         
-        # Synthesize topology dynamically from rules (NO FALLBACK TEMPLATES!)
-        topology = reasoning_engine.plan_topology(workload, budget_val)
+        # Merge explicitly classified workload into reasoned intent just to ensure routing
+        if "workload_classification" not in reasoned_intent:
+            reasoned_intent["workload_classification"] = workload
+
+        raw_topology = reasoning_engine.synthesize_from_intent(reasoned_intent, budget_val)
+        topology = reasoning_engine.normalize_topology(raw_topology)
+
+        if not topology["nodes"] or not topology["edges"] or not topology["services"]:
+            logger.warning("Synthesis returned empty topology. Falling back to basic CRUD intent.")
+            fallback_intent = {"workload_classification": workload, "architectural_intent": {"compute_preference": "basic_vm", "database_preference": "relational"}}
+            raw_topology = reasoning_engine.synthesize_from_intent(fallback_intent, budget_val)
+            topology = reasoning_engine.normalize_topology(raw_topology)
+
         nodes = topology["nodes"]
         edges = topology["edges"]
         services = topology["services"]
@@ -82,11 +114,17 @@ async def generate_architecture(requirements: RequirementInput):
         
         terraform_modules = list(set([n.get("type", "Module") for n in nodes]))
         
+        end_time = asyncio.get_event_loop().time()
+        exec_ms = int((end_time - start_time) * 1000)
+        
         response = ArchitectureResponse(
             nodes=nodes,
             edges=edges,
             services=services,
             cloud_provider=provider,
+            active_provider=getattr(llm_client, "last_active_provider", getattr(llm_client, "provider_name", "Unknown")),
+            active_model=getattr(llm_client, "last_active_model", getattr(llm_client, "model_name", "unknown")),
+            fallback_trigger=getattr(llm_client, "last_fallback_trigger", "none"),
             cost_estimate=float(cost_res.get("estimated_monthly_cost", budget_val * 0.8)),
             cost_breakdown=cost_res.get("cost_breakdown", []),
             optimization_recommendations=cost_res.get("optimization_recommendations", []),
@@ -100,9 +138,10 @@ async def generate_architecture(requirements: RequirementInput):
             explanation=explanation_res.get("explanation", ""),
             alternatives_considered=explanation_res.get("alternatives_considered", ""),
             justification_for_choices=explanation_res.get("justification_for_choices", ""),
-            terraform_modules=terraform_modules
+            terraform_modules=terraform_modules,
+            execution_time_ms=exec_ms
         )
-        logger.info(f"Consolidated deterministic-first topology with AI enhancements.")
+        logger.info(f"Consolidated deterministic-first topology with AI enhancements in {exec_ms}ms.")
         return response
         
     except Exception as e:
@@ -114,7 +153,10 @@ async def generate_terraform(request: TerraformRequest):
     """
     Renders HCL configs using the canvas graph as the SINGLE SOURCE OF TRUTH.
     """
-    logger.info("Compiling HCL templates directly from the visual canvas graph...")
+    logger.info(
+        "Compiling HCL templates directly from the visual canvas graph | Provider: %s",
+        request.cloud_provider,
+    )
     try:
         nodes_dict = [node.model_dump() for node in request.nodes]
         edges_dict = [edge.model_dump() for edge in request.edges]
