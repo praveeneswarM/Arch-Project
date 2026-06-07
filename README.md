@@ -101,35 +101,35 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ---
 
-## 🏗️ ArchGen AI: Azure Production Architecture
+## 🏗️ ArchGen AI: Application Architecture
 
-This section describes the target production deployment of the ArchGen AI platform itself on Microsoft Azure.
+This section describes the application architecture of the ArchGen AI platform.
 
 ### 1. Architecture Overview
-ArchGen AI is a scalable, cloud-native application deployed on Azure. It leverages modern PaaS and serverless offerings to provide a highly available and secure environment for generating cloud architectures and compiling Terraform configurations.
+ArchGen AI is a scalable, cloud-native SaaS application. It leverages a modern decoupled microservices architecture to provide a highly available and secure environment for generating cloud architectures and compiling Terraform configurations.
 
-### 2. Azure Production Architecture
+### 2. Full Application Architecture
 
 **Users**  
 &nbsp;&nbsp;↓  
-**Azure Front Door + WAF**  
+**Global CDN + WAF (Web Application Firewall)**  
 &nbsp;&nbsp;↓  
-**Azure Static Web App** *(Next.js Frontend)*  
+**Static Web App** *(Next.js Frontend)*  
 &nbsp;&nbsp;↓  
-**Azure Container Apps** *(FastAPI Backend)*  
+**Containerized Microservices** *(FastAPI Backend)*  
 &nbsp;&nbsp;↓  
-**MongoDB Database** *(Atlas / Stateful Storage)*  
+**NoSQL Database** *(MongoDB Atlas / Stateful Storage)*  
 
 ### 3. Component Responsibilities
-* **Azure Front Door + WAF**: Global entry point, load balancing, caching, and Web Application Firewall for DDoS and malicious payload protection.
-* **Azure Static Web App**: Hosts the static Next.js frontend, ensuring global edge caching and fast delivery of the React Flow UI.
-* **Azure Container Apps**: Hosts the FastAPI backend microservices orchestrating business logic (Auth, Architecture Generation, Terraform Generation).
-* **MongoDB**: Persistent database storing user profiles, saved projects, and historical architectures.
-* **Azure Service Bus**: Asynchronous message queue for heavy document processing and background worker tasks.
-* **Azure Key Vault**: Centralized and isolated secret management for AI provider keys, database credentials, and JWT secrets.
-* **Azure Redis Cache**: Ephemeral session caching and fast retrieval for repetitive queries.
-* **Azure Storage Account**: General-purpose blob storage for exportable files (Terraform zip archives) and static assets.
-* **Azure Log Analytics & App Insights**: Telemetry, distributed tracing, and centralized application logging.
+* **Global CDN + WAF**: Global entry point, load balancing, edge caching, and Web Application Firewall for DDoS and malicious payload protection.
+* **Static Web App**: Hosts the static Next.js frontend, ensuring global edge caching and fast delivery of the React Flow UI.
+* **Containerized Microservices**: Hosts the FastAPI backend orchestrating business logic (Auth, Architecture Generation, Terraform Generation).
+* **NoSQL Database**: Persistent database (MongoDB) storing user profiles, saved projects, and historical architectures.
+* **Message Queue**: Asynchronous message broker (e.g. Service Bus / RabbitMQ) for heavy document processing and background worker tasks.
+* **Secret Manager**: Centralized and isolated secret management (e.g. Vault / Key Management Service) for AI provider keys, database credentials, and JWT secrets.
+* **In-Memory Cache**: Ephemeral session caching and fast retrieval for repetitive queries (e.g. Redis).
+* **Object Storage**: General-purpose blob storage for exportable files (Terraform zip archives) and static assets (e.g. S3 / Blob Storage).
+* **Telemetry & Monitoring**: Distributed tracing, log aggregation, and centralized application monitoring.
 
 ### 4. Request Flow
 **User** → **Frontend** → **FastAPI Backend** → **ArchitectureReasoningAgent** → **InfrastructureReasoningEngine** → **Architecture Graph** → **Terraform Generator** → **MongoDB Save** → **Frontend Display**
@@ -148,35 +148,34 @@ The AI orchestration pipeline implements a resilient fallback mechanism:
 The backend synthesizes the visual Architecture Graph into modular HashiCorp Configuration Language (HCL). It utilizes centralized naming enforcement, template mapping for multi-cloud deployments (AWS, Azure, GCP), and ensures output consistency before compressing and returning the templates.
 
 ### 7. Deployment Architecture
-* **Frontend**: Azure Static Web App
-* **Backend**: Azure Container Apps (Autoscaling from 0 to N based on concurrent HTTP requests)
-* **Database**: MongoDB Atlas (Multi-region replica set)
-* **Cache**: Azure Redis
-* **Monitoring**: Azure Monitor
+* **Frontend**: Global Edge Static Hosting
+* **Backend**: Container Orchestrator (Autoscaling from 0 to N based on concurrent HTTP requests)
+* **Database**: Managed MongoDB (Multi-region replica set)
+* **Cache**: Managed Redis
+* **Monitoring**: Centralized Log Aggregation
 
 ### 8. Security Architecture
-* **Azure Front Door WAF**: Protects against OWASP Top 10 vulnerabilities.
-* **Azure Key Vault**: Secrets are isolated; components authenticate using Azure Managed Identity.
+* **WAF**: Protects against OWASP Top 10 vulnerabilities.
+* **Secret Manager**: Secrets are isolated; components authenticate using internal IAM roles.
 * **JWT Authentication**: Stateless, expiring token authorization.
 * **Role Based Access Control (RBAC)**: Enforced at the control plane.
 * **HTTPS Everywhere**: End-to-end TLS encryption.
-* **Managed Identity**: Secret Isolation.
-* **Audit Logging**: Comprehensive logging via Azure Log Analytics.
+* **Audit Logging**: Comprehensive logging via centralized monitoring.
 
 ### 9. Scalability Strategy
-* **Frontend**: Automatically scaled and cached globally via Azure Static Web Apps.
-* **Backend**: Azure Container Apps utilizes KEDA (Kubernetes Event-driven Autoscaling) to dynamically scale FastAPI instances based on demand.
-* **Database**: MongoDB Atlas allows transparent horizontal sharding and vertical scaling.
+* **Frontend**: Automatically scaled and cached globally via CDN.
+* **Backend**: Container instances dynamically scale based on demand.
+* **Database**: MongoDB allows transparent horizontal sharding and vertical scaling.
 * **Cache & Monitoring**: Fully managed PaaS services designed to elastically absorb varying workloads.
 
 ### 10. Architecture Diagram
 
-\\mermaid
+```mermaid
 graph TD
 
-User --> FrontDoor
-FrontDoor --> StaticWebApp
-StaticWebApp --> FastAPI
+User --> CDN_WAF[CDN + WAF]
+CDN_WAF --> NextJS[Next.js Frontend]
+NextJS --> FastAPI[FastAPI Backend]
 
 FastAPI --> AuthService
 FastAPI --> ArchitectureService
@@ -188,11 +187,12 @@ ArchitectureService --> Ollama
 FastAPI --> MongoDB
 FastAPI --> Redis
 
-FastAPI --> ServiceBus
+FastAPI --> MessageQueue
 
-FastAPI --> KeyVault
+FastAPI --> SecretManager
 
-FastAPI --> LogAnalytics
-\
+FastAPI --> LogAnalytics[Telemetry & Logging]
+```
+
 ### 11. Future Multi-Cloud Expansion
-While Azure is the primary deployment target, the infrastructure modules are entirely decoupled from the business logic. Future iterations will allow ArchGen AI to be easily deployed on AWS (using CloudFront, S3, ECS Fargate) or GCP (using Cloud Load Balancing, Cloud Storage, Cloud Run) with minimal friction.
+The infrastructure modules are entirely decoupled from the business logic. Future iterations will allow ArchGen AI to be easily deployed on AWS, Azure, or GCP with minimal friction.
